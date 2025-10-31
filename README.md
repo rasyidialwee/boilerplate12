@@ -12,10 +12,12 @@ A modern Laravel 12 application with React and TypeScript, powered by Inertia.js
 - **Containerization**: Laravel Sail (Docker)
 - **Database**: MySQL 8.0
 - **Cache/Sessions**: Redis
-- **Queue**: Database driver
-- **Websockets**: Soketi (Pusher alternative)
+- **Queue**: Redis (via Laravel Horizon)
+- **Websockets**: Laravel Reverb
 - **Email Testing**: Mailpit
 - **Code Quality**: Larastan (PHPStan), Rector
+- **Permissions**: Spatie Laravel Permission
+- **Frontend Tools**: ESLint, Prettier
 
 ## 📋 Prerequisites
 
@@ -97,6 +99,14 @@ sail npm run dev
 sail artisan migrate
 ```
 
+### 8. Seed Roles and Permissions
+
+```bash
+sail artisan db:seed
+```
+
+This will create initial roles (admin, user) and permissions (view telescope, view horizon). Only the admin role has access to Telescope and Horizon dashboards. Assign roles to users as needed.
+
 ## 🏃 Starting Development
 
 ### Using Laravel Sail (Recommended)
@@ -120,7 +130,8 @@ This will start:
 - **MySQL**: Port `3306`
 - **Redis**: Port `6379`
 - **Mailpit Dashboard**: `http://localhost:8025`
-- **Soketi (Websockets)**: Port `6001`
+
+**Note**: Reverb websocket server should be started separately with `sail artisan reverb:start`
 
 ### Running Artisan Commands
 
@@ -184,14 +195,16 @@ This will automatically:
 
 When running `sail up`, the following services are available:
 
-| Service         | URL/Port                | Description                             |
-| --------------- | ----------------------- | --------------------------------------- |
-| **Laravel App** | `http://localhost`      | Main application                        |
-| **Vite**        | `http://localhost:5173` | Frontend development server             |
-| **MySQL**       | `localhost:3306`        | Database server                         |
-| **Redis**       | `localhost:6379`        | Cache and session store                 |
-| **Mailpit**     | `http://localhost:8025` | Email testing dashboard                 |
-| **Soketi**      | `localhost:6001`        | WebSocket server for real-time features |
+| Service         | URL/Port                     | Description                                           |
+| --------------- | ---------------------------- | ----------------------------------------------------- |
+| **Laravel App** | `http://localhost`           | Main application                                      |
+| **Vite**        | `http://localhost:5173`      | Frontend development server                           |
+| **MySQL**       | `localhost:3306`             | Database server                                       |
+| **Redis**       | `localhost:6379`             | Cache and session store                               |
+| **Mailpit**     | `http://localhost:8025`      | Email testing dashboard                               |
+| **Horizon**     | `http://localhost/horizon`   | Queue management dashboard (requires permission)      |
+| **Telescope**   | `http://localhost/telescope` | Application debugging dashboard (requires permission) |
+| **Reverb**      | `localhost:8080`             | WebSocket server (run via `artisan reverb:start`)     |
 
 ## 📝 Environment Configuration
 
@@ -205,6 +218,25 @@ DB_CONNECTION=mysql
 DB_DATABASE=laravel
 DB_USERNAME=sail
 DB_PASSWORD=password
+
+# Queue Configuration (for Horizon)
+QUEUE_CONNECTION=redis
+
+# Broadcasting Configuration (for Reverb)
+BROADCAST_CONNECTION=reverb
+REVERB_APP_ID=app-id
+REVERB_APP_KEY=app-key
+REVERB_APP_SECRET=app-secret
+REVERB_HOST=localhost
+REVERB_PORT=8080
+REVERB_SCHEME=http
+
+# Telescope Configuration
+TELESCOPE_ENABLED=true
+
+# Horizon Configuration
+HORIZON_PREFIX=horizon
+HORIZON_BALANCE=auto
 
 # Vite will automatically use the correct host
 VITE_APP_NAME="${APP_NAME}"
@@ -227,8 +259,11 @@ sail artisan test
 # Run Pint (code formatter)
 sail artisan pint
 
-# Start queue worker
+# Start queue worker (or use Horizon)
 sail artisan queue:work
+
+# Start Horizon (recommended for Redis queues)
+sail artisan horizon
 
 # Start Pail (log viewer)
 sail artisan pail
@@ -295,6 +330,101 @@ sail npm run format
 
 # Type checking
 sail npm run types
+```
+
+#### ESLint and Prettier
+
+This project uses ESLint for code linting and Prettier for code formatting.
+
+```bash
+# Run ESLint to check and fix code issues
+sail npm run lint
+
+# Format code with Prettier
+sail npm run format
+
+# Check if code is formatted correctly
+sail npm run format:check
+```
+
+ESLint is configured in `eslint.config.js` with React, TypeScript, and Prettier integration. Prettier is configured in `.prettierrc` with Tailwind CSS plugin support.
+
+### Queue Management (Laravel Horizon)
+
+Horizon provides a dashboard and monitoring for your Redis queues. Access it at `http://localhost/horizon` (requires permission: `view horizon`).
+
+```bash
+# Start Horizon
+sail artisan horizon
+
+# Pause Horizon
+sail artisan horizon:pause
+
+# Continue Horizon
+sail artisan horizon:continue
+
+# Terminate Horizon
+sail artisan horizon:terminate
+
+# View Horizon status
+sail artisan horizon:status
+```
+
+**Note**: Only users with the `view horizon` permission can access the Horizon dashboard. Assign the `admin` role to grant access.
+
+### Application Debugging (Laravel Telescope)
+
+Telescope provides insights into your application's requests, commands, jobs, and more. Access it at `http://localhost/telescope` (requires permission: `view telescope`).
+
+Telescope is enabled in both development and production environments. Access is controlled via Spatie permissions - users must have the `view telescope` permission.
+
+**Note**: Only users with the `view telescope` permission can access the Telescope dashboard. Assign the `admin` role to grant access.
+
+### WebSockets (Laravel Reverb)
+
+Reverb provides a WebSocket server for real-time features. Start it with:
+
+```bash
+# Start Reverb server
+sail artisan reverb:start
+
+# Start Reverb in development mode (with debugging)
+sail artisan reverb:start --debug
+
+# Start Reverb with specific host and port
+sail artisan reverb:start --host=0.0.0.0 --port=8080
+```
+
+Reverb configuration is in `config/reverb.php` and can be customized via environment variables in `.env`.
+
+### Permissions (Spatie Laravel Permission)
+
+This project uses Spatie Laravel Permission for role-based access control. Initial roles and permissions are seeded via `RolePermissionSeeder`.
+
+**Initial Roles:**
+
+- `admin` - Has access to Telescope and Horizon dashboards
+- `user` - Normal user with no special dashboard access
+
+**Initial Permissions:**
+
+- `view telescope` - Access to Telescope dashboard (admin only)
+- `view horizon` - Access to Horizon dashboard (admin only)
+
+**Assigning Roles to Users:**
+
+```php
+$user = User::find(1);
+$user->assignRole('admin');  // Grant admin access
+// or
+$user->assignRole('user');   // Grant normal user access
+```
+
+**Checking Permissions:**
+
+```php
+$user->hasPermissionTo('view telescope');
+$user->hasRole('admin');
 ```
 
 ## 🛑 Stopping Services
@@ -379,9 +509,15 @@ sail build --no-cache
 
 - [Laravel Documentation](https://laravel.com/docs)
 - [Laravel Sail Documentation](https://laravel.com/docs/sail)
+- [Laravel Horizon Documentation](https://laravel.com/docs/horizon)
+- [Laravel Telescope Documentation](https://laravel.com/docs/telescope)
+- [Laravel Reverb Documentation](https://laravel.com/docs/reverb)
 - [Inertia.js Documentation](https://inertiajs.com/)
 - [React Documentation](https://react.dev/)
 - [Vite Documentation](https://vitejs.dev/)
+- [Spatie Laravel Permission Documentation](https://spatie.be/docs/laravel-permission)
+- [ESLint Documentation](https://eslint.org/)
+- [Prettier Documentation](https://prettier.io/)
 - [Larastan Documentation](https://github.com/larastan/larastan)
 - [Rector Laravel Documentation](https://github.com/driftingly/rector-laravel)
 
