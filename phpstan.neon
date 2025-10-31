@@ -1,0 +1,29 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app/
+        - config/
+        - database/
+        - routes/
+
+    # Rule level (0 is the loosest and 9 is the strictest)
+    level: 5
+
+    # Exclude paths
+    excludePaths:
+        - vendor/
+        - storage/
+        - bootstrap/cache/
+
+    # Laravel-specific settings
+    checkMissingIterableValueType: false
+    checkGenericClassInNonGenericObjectType: false
+
+    # Laravel specific ignores
+    ignoreErrors:
+        - '#Call to an undefined method [a-zA-Z0-9\\_]+::factory\(\)#'
+        - '#Access to an undefined property [a-zA-Z0-9\\_]+::\$[a-zA-Z0-9]+#'
+        - '#Call to an undefined method Illuminate\\Support\\Collection::[a-zA-Z]+\(\)#'
+
