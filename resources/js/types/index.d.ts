@@ -39,5 +39,24 @@ export interface User {
     two_factor_enabled?: boolean;
     created_at: string;
     updated_at: string;
+    role?: string;
     [key: string]: unknown; // This allows for additional properties...
+}
+
+export interface Role {
+    id: number;
+    name: string;
+    guard_name: string;
+    created_at: string;
+    updated_at: string;
+    permissions?: Permission[];
+    permissions_count?: number;
+}
+
+export interface Permission {
+    id: number;
+    name: string;
+    guard_name: string;
+    created_at: string;
+    updated_at: string;
 }

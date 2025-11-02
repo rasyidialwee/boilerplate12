@@ -27,4 +27,3 @@ class RolePermissionSeeder extends Seeder
         // User role has no special permissions by default
     }
 }
-

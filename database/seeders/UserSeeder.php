@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -20,13 +19,13 @@ class UserSeeder extends Seeder
             'password' => Hash::make('password'),
             'email_verified_at' => now(),
         ]);
-        
+
         User::factory()->asAdmin()->create([
             'name' => 'Admin',
             'email' => 'admin@skyrem.my',
             'password' => Hash::make('password'),
             'email_verified_at' => now(),
         ]);
-      
+
     }
 }
