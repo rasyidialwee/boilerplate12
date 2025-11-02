@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
@@ -54,5 +55,27 @@ class UserFactory extends Factory
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
         ]);
+    }
+
+    /**
+     * Indicate that the user should have the superadmin role.
+     */
+    public function asSuperadmin(): static
+    {
+        return $this->afterCreating(function ($user) {
+            $role = Role::firstOrCreate(['name' => 'superadmin']);
+            $user->assignRole($role);
+        });
+    }
+
+    /**
+     * Indicate that the user should have the admin role.
+     */
+    public function asAdmin(): static
+    {
+        return $this->afterCreating(function ($user) {
+            $role = Role::firstOrCreate(['name' => 'admin']);
+            $user->assignRole($role);
+        });
     }
 }
