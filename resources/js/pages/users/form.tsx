@@ -90,7 +90,7 @@ export default function UsersForm({ user, roles }: UsersFormProps) {
     const pageTitle = isEditMode ? 'Edit User' : 'Create User';
     const pageDescription = isEditMode
         ? 'Update user details and role'
-        : 'Create a new user with role assignment';
+        : 'Create a new user with role assignment. A secure password will be automatically generated and sent to the user via email.';
     const submitButtonText = isEditMode ? 'Update User' : 'Create User';
 
     return (
@@ -167,41 +167,31 @@ export default function UsersForm({ user, roles }: UsersFormProps) {
                                     <InputError message={errors.email} />
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="password">
-                                        Password{' '}
-                                        {!isEditMode && (
-                                            <span className="text-destructive">
-                                                *
-                                            </span>
-                                        )}
-                                    </Label>
-                                    <Input
-                                        id="password"
-                                        name="password"
-                                        type="password"
-                                        value={formData.password}
-                                        onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                password: e.target.value,
-                                            })
-                                        }
-                                        placeholder={
-                                            isEditMode
-                                                ? 'Leave blank to keep current password'
-                                                : 'Minimum 8 characters'
-                                        }
-                                        required={!isEditMode}
-                                    />
-                                    <InputError message={errors.password} />
-                                    {isEditMode && (
+                                {isEditMode && (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="password">
+                                            Password
+                                        </Label>
+                                        <Input
+                                            id="password"
+                                            name="password"
+                                            type="password"
+                                            value={formData.password}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    password: e.target.value,
+                                                })
+                                            }
+                                            placeholder="Leave blank to keep current password"
+                                        />
+                                        <InputError message={errors.password} />
                                         <p className="text-xs text-muted-foreground">
                                             Leave blank to keep the current
                                             password
                                         </p>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
 
                                 <div className="space-y-2">
                                     <Label htmlFor="role">
