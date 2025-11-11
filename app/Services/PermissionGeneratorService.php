@@ -100,7 +100,7 @@ class PermissionGeneratorService
             $className = class_basename($model);
         }
 
-        return Str::plural(Str::kebab($className));
+        return Str::plural(Str::snake($className));
     }
 
     /**
@@ -108,6 +108,6 @@ class PermissionGeneratorService
      */
     protected function generatePermissionName(string $action, string $modelName): string
     {
-        return "{$action} {$modelName}";
+        return "{$action}_{$modelName}";
     }
 }

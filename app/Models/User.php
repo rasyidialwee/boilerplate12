@@ -16,13 +16,6 @@ class User extends Authenticatable
     use HasFactory, HasRoles, Notifiable, TwoFactorAuthenticatable;
 
     /**
-     * The relationships that should always be loaded.
-     *
-     * @var array<int, string>
-     */
-    protected $with = ['roles'];
-
-    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -32,6 +25,13 @@ class User extends Authenticatable
         'email',
         'password',
     ];
+
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = ['current_role'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -68,6 +68,18 @@ class User extends Authenticatable
     {
         return Attribute::make(
             get: fn () => $this->roles->first()?->name,
+        );
+    }
+
+    /**
+     * Get the user's current role name with capitalized first letter.
+     *
+     * @return Attribute<string|null, never>
+     */
+    protected function currentRole(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->roles->first()?->name ? ucfirst($this->roles->first()->name) : null,
         );
     }
 }

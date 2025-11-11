@@ -13,12 +13,13 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Shield } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Shield, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 export function AppSidebar() {
     const { auth } = usePage<SharedData>().props;
     const isSuperAdmin = auth.user?.role === 'superadmin';
+    const isAdmin = auth.user?.role === 'admin' || isSuperAdmin;
 
     const mainNavItems: NavItem[] = [
         {
@@ -26,6 +27,15 @@ export function AppSidebar() {
             href: dashboard(),
             icon: LayoutGrid,
         },
+        ...(isAdmin
+            ? [
+                  {
+                      title: 'Users',
+                      href: '/users',
+                      icon: Users,
+                  } as NavItem,
+              ]
+            : []),
     ];
 
     const footerNavItems: NavItem[] = [

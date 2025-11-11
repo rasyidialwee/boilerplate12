@@ -18,12 +18,9 @@ class RolePermissionSeeder extends Seeder
         Permission::firstOrCreate(['name' => 'view horizon']);
 
         // Create roles
+        $superadmin = Role::firstOrCreate(['name' => 'superadmin']);
         $admin = Role::firstOrCreate(['name' => 'admin']);
         $user = Role::firstOrCreate(['name' => 'user']);
-
-        // Assign permissions to roles
-        // Only admin has access to Telescope and Horizon
-        $admin->givePermissionTo(['view telescope', 'view horizon']);
-        // User role has no special permissions by default
+    
     }
 }
