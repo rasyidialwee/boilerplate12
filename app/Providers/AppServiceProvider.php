@@ -28,6 +28,11 @@ class AppServiceProvider extends ServiceProvider
             return $user?->hasRole('superadmin') ?? false;
         });
 
+        // Define Gate for system settings management
+        Gate::define('can-manage-system-settings', function ($user) {
+            return $user?->hasPermissionTo('can-manage-system-settings') ?? false;
+        });
+
         // Register event listeners
         Event::listen(
             UserCreated::class,

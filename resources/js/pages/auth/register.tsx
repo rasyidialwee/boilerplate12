@@ -90,6 +90,21 @@ export default function Register() {
                                 />
                             </div>
 
+                            <div className="grid gap-2">
+                                <Label htmlFor="role">Role</Label>
+                                <Input
+                                    id="role"
+                                    type="text"
+                                    disabled
+                                    value="user"
+                                    name="role"
+                                    tabIndex={-1}
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    New users are automatically assigned the user role.
+                                </p>
+                            </div>
+
                             <Button
                                 type="submit"
                                 className="mt-2 w-full"

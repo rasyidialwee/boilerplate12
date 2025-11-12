@@ -60,4 +60,3 @@ class UserPasswordMail extends Mailable
         return [];
     }
 }
-

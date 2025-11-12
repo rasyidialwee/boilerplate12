@@ -22,4 +22,3 @@ class AssignRoleToUser
         $user->syncRoles($roles);
     }
 }
-

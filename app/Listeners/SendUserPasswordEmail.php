@@ -30,4 +30,3 @@ class SendUserPasswordEmail implements ShouldQueue
         );
     }
 }
-

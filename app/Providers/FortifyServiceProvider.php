@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Settings\SystemSettings;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -49,7 +50,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/login', [
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
-            'canRegister' => Features::enabled(Features::registration()),
+            'canRegister' => $this->isRegistrationEnabled() && Features::enabled(Features::registration()),
             'status' => $request->session()->get('status'),
         ]));
 
@@ -66,11 +67,33 @@ class FortifyServiceProvider extends ServiceProvider
             'status' => $request->session()->get('status'),
         ]));
 
-        Fortify::registerView(fn () => Inertia::render('auth/register'));
+        Fortify::registerView(function () {
+            if (! $this->isRegistrationEnabled()) {
+                abort(403, 'Registration is currently disabled.');
+            }
+
+            return Inertia::render('auth/register');
+        });
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
 
         Fortify::confirmPasswordView(fn () => Inertia::render('auth/confirm-password'));
+    }
+
+    /**
+     * Check if registration is enabled in system settings.
+     * Returns true by default if settings table doesn't exist yet.
+     */
+    private function isRegistrationEnabled(): bool
+    {
+        try {
+            $systemSettings = app(SystemSettings::class);
+
+            return $systemSettings->registration_enabled;
+        } catch (\Exception $e) {
+            // If settings table doesn't exist yet (during migrations), default to enabled
+            return true;
+        }
     }
 
     /**

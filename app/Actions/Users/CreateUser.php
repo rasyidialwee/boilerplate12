@@ -2,7 +2,6 @@
 
 namespace App\Actions\Users;
 
-use App\Actions\Users\AssignRoleToUser;
 use App\Events\UserCreated;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -42,7 +41,7 @@ class CreateUser
     protected function getDefaultRoleId(): int
     {
         $role = Role::firstOrCreate(['name' => 'user']);
+
         return $role->id;
     }
 }
-

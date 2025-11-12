@@ -18,7 +18,7 @@ class UpdateUser
         ];
 
         // Only update password if provided
-        if (!empty($data['password'])) {
+        if (! empty($data['password'])) {
             $updateData['password'] = Hash::make($data['password']);
         }
 
@@ -27,4 +27,3 @@ class UpdateUser
         return $user;
     }
 }
-

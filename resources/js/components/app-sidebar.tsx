@@ -13,7 +13,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Shield, Users } from 'lucide-react';
+import { LayoutGrid, Settings, Shield, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 export function AppSidebar() {
@@ -39,6 +39,15 @@ export function AppSidebar() {
     ];
 
     const footerNavItems: NavItem[] = [
+        ...(isAdmin
+            ? [
+                  {
+                      title: 'Settings',
+                      href: '/settings/system',
+                      icon: Settings,
+                  } as NavItem,
+              ]
+            : []),
         ...(isSuperAdmin
             ? [
                   {
@@ -48,16 +57,6 @@ export function AppSidebar() {
                   } as NavItem,
               ]
             : []),
-        {
-            title: 'Repository',
-            href: 'https://github.com/laravel/react-starter-kit',
-            icon: Folder,
-        },
-        {
-            title: 'Documentation',
-            href: 'https://laravel.com/docs/starter-kits#react',
-            icon: BookOpen,
-        },
     ];
 
     return (

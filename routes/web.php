@@ -2,13 +2,23 @@
 
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
+use App\Settings\SystemSettings;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
 Route::get('/', function () {
+    $canRegister = true;
+    try {
+        $systemSettings = app(SystemSettings::class);
+        $canRegister = $systemSettings->registration_enabled && Features::enabled(Features::registration());
+    } catch (\Exception $e) {
+        // If settings table doesn't exist yet, default to enabled
+        $canRegister = Features::enabled(Features::registration());
+    }
+
     return Inertia::render('welcome', [
-        'canRegister' => Features::enabled(Features::registration()),
+        'canRegister' => $canRegister,
     ]);
 })->name('home');
 
@@ -22,5 +32,3 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'roles' => RoleController::class,
     ]);
 });
-
-require __DIR__.'/settings.php';

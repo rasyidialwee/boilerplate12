@@ -65,4 +65,3 @@ class UserPolicy
         return $user->hasPermissionTo('delete_users');
     }
 }
-
