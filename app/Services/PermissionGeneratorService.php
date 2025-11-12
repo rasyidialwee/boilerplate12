@@ -40,11 +40,11 @@ class PermissionGeneratorService
                 ->where('guard_name', $guard)
                 ->exists();
 
-            if ($exists && ! $force) {
-                continue;
-            }
-
-            if ($exists && $force) {
+            if ($exists) {
+                if (! $force) {
+                    continue;
+                }
+                // Force regeneration: delete existing permission
                 Permission::where('name', $permissionName)
                     ->where('guard_name', $guard)
                     ->first()?->delete();

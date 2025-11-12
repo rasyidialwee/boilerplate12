@@ -2,6 +2,7 @@
 
 namespace App\Actions\Roles;
 
+use Spatie\Permission\Contracts\Role as RoleContract;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -10,7 +11,7 @@ class CreateRole
     /**
      * Create a new role with the given permissions.
      */
-    public function handle(array $data): Role
+    public function handle(array $data): RoleContract
     {
         $role = Role::create([
             'name' => $data['name'],

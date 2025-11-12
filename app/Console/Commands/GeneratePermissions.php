@@ -34,8 +34,8 @@ class GeneratePermissions extends Command
         $service = app(PermissionGeneratorService::class);
         $models = $this->getModels();
         $actions = $this->getActions();
-        $guard = $this->option('guard') ?? 'web';
-        $force = $this->option('force') ?? false;
+        $guard = $this->option('guard') ?: 'web';
+        $force = (bool) $this->option('force');
 
         if (empty($models)) {
             $this->error('No models found. Please specify models using --models option or ensure models exist in app/Models directory.');
@@ -55,7 +55,8 @@ class GeneratePermissions extends Command
         $totalSkipped = 0;
 
         foreach ($models as $model) {
-            $modelName = is_string($model) ? class_basename($model) : class_basename(get_class($model));
+            // $model is always a string from getModels(), but service accepts string|object
+            $modelName = class_basename($model);
             $this->info("Processing model: {$modelName}");
 
             $created = $service->generateForModel($model, $actions, $guard, $force);

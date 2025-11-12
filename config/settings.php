@@ -71,12 +71,13 @@ return [
      * These global casts will be automatically used whenever a property within
      * your settings class isn't a default PHP type.
      */
-    'global_casts' => [
+    'global_casts' => array_merge([
         DateTimeInterface::class => Spatie\LaravelSettings\SettingsCasts\DateTimeInterfaceCast::class,
         DateTimeZone::class => Spatie\LaravelSettings\SettingsCasts\DateTimeZoneCast::class,
         //        Spatie\DataTransferObject\DataTransferObject::class => Spatie\LaravelSettings\SettingsCasts\DtoCast::class,
-        Spatie\LaravelData\Data::class => Spatie\LaravelSettings\SettingsCasts\DataCast::class,
-    ],
+    ], class_exists('Spatie\LaravelData\Data') ? [
+        'Spatie\LaravelData\Data' => Spatie\LaravelSettings\SettingsCasts\DataCast::class,
+    ] : []),
 
     /*
      * The package will look for settings in these paths and automatically

@@ -17,13 +17,7 @@ parameters:
         - storage/
         - bootstrap/cache/
 
-    # Laravel-specific settings
-    checkMissingIterableValueType: false
-    checkGenericClassInNonGenericObjectType: false
-
     # Laravel specific ignores
     ignoreErrors:
-        - '#Call to an undefined method [a-zA-Z0-9\\_]+::factory\(\)#'
         - '#Access to an undefined property [a-zA-Z0-9\\_]+::\$[a-zA-Z0-9]+#'
-        - '#Call to an undefined method Illuminate\\Support\\Collection::[a-zA-Z]+\(\)#'
 
