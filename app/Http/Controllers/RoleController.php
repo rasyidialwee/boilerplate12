@@ -14,6 +14,8 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
 
 class RoleController extends Controller
 {
@@ -24,10 +26,23 @@ class RoleController extends Controller
     {
         Gate::authorize('access-superadmin');
 
-        $roles = Role::with('permissions')
+        $perPage = $request->get('per_page', 10);
+        $perPage = in_array($perPage, [10, 25, 50, 100]) ? (int) $perPage : 10;
+
+        $roles = QueryBuilder::for(Role::class)
+            ->allowedFilters([
+                AllowedFilter::callback('search', function ($query, $value) {
+                    return $query->where('name', 'like', "%{$value}%")
+                        ->orWhere('guard_name', 'like', "%{$value}%");
+                }),
+            ])
+            ->allowedSorts(['name', 'guard_name', 'created_at'])
+            ->allowedIncludes(['permissions'])
+            ->defaultSort('-created_at')
+            ->with('permissions')
             ->withCount('permissions')
-            ->latest()
-            ->paginate(15);
+            ->paginate($perPage)
+            ->withQueryString();
 
         return Inertia::render('roles/index', [
             'roles' => $roles,
@@ -95,6 +110,8 @@ class RoleController extends Controller
      */
     public function update(UpdateRoleRequest $request, Role $role, UpdateRole $updateRole): RedirectResponse
     {
+        Gate::authorize('access-superadmin');
+
         $updateRole->handle($role, $request->validated());
 
         return redirect()->route('roles.index');

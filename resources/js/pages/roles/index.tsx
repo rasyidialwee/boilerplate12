@@ -1,11 +1,13 @@
 import { type BreadcrumbItem, type Role, type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Info, Pencil, Plus, Shield, Trash2 } from 'lucide-react';
-import { useEffect } from 'react';
+import { Info, Pencil, Plus, Search, Shield, Trash2, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
+import DataTablePagination from '@/components/data-table-pagination';
+import DeleteConfirmationModal from '@/components/delete-confirmation-modal';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/app-layout';
-import { dashboard } from '@/routes';
 
 interface RolesIndexProps {
     roles: {
@@ -18,14 +20,23 @@ interface RolesIndexProps {
 }
 
 export default function RolesIndex({ roles }: RolesIndexProps) {
-    const { auth } = usePage<SharedData>().props;
+    const { url } = usePage<SharedData>().props;
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [roleToDelete, setRoleToDelete] = useState<{
+        id: number;
+        name: string;
+    } | null>(null);
 
-    // Check if user has superadmin role, redirect if not
-    useEffect(() => {
-        if (auth.user?.role !== 'superadmin') {
-            router.visit(dashboard().url);
+    // Get search value from URL
+    const getSearchFromUrl = () => {
+        if (typeof window !== 'undefined') {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('filter[search]') || '';
         }
-    }, [auth.user?.role]);
+        return '';
+    };
+
+    const [search, setSearch] = useState(getSearchFromUrl());
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -34,14 +45,132 @@ export default function RolesIndex({ roles }: RolesIndexProps) {
         },
     ];
 
-    if (auth.user?.role !== 'superadmin') {
-        return null;
-    }
+    const handleDeleteClick = (roleId: number, roleName: string) => {
+        setRoleToDelete({ id: roleId, name: roleName });
+        setDeleteModalOpen(true);
+    };
 
-    const handleDelete = (roleId: number) => {
-        if (confirm('Are you sure you want to delete this role?')) {
-            router.delete(`/roles/${roleId}`);
+    const handleDeleteConfirm = () => {
+        if (roleToDelete) {
+            router.delete(`/roles/${roleToDelete.id}`, {
+                onSuccess: () => {
+                    setDeleteModalOpen(false);
+                    setRoleToDelete(null);
+                },
+            });
         }
+    };
+
+    const handleDeleteCancel = () => {
+        setDeleteModalOpen(false);
+        setRoleToDelete(null);
+    };
+
+    // Update search when URL changes (e.g., back button)
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const urlParams = new URLSearchParams(window.location.search);
+            const searchParam = urlParams.get('filter[search]') || '';
+            setSearch(searchParam);
+        }
+    }, [url]);
+
+    // Debounced search - triggers when search has at least 3 characters
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const timeoutId = setTimeout(() => {
+            const params = new URLSearchParams();
+            const trimmedSearch = search.trim();
+            const currentParams = new URLSearchParams(window.location.search);
+            const hasExistingFilter = currentParams.has('filter[search]');
+
+            // Only search if 3+ characters
+            if (trimmedSearch.length >= 3) {
+                params.set('filter[search]', trimmedSearch);
+                router.get(
+                    `/roles?${params.toString()}`,
+                    {},
+                    {
+                        preserveState: true,
+                        preserveScroll: false,
+                    },
+                );
+            } else if (trimmedSearch.length === 0 && hasExistingFilter) {
+                // Clear filter if search is empty and there was a previous filter
+                router.get(
+                    '/roles',
+                    {},
+                    {
+                        preserveState: true,
+                        preserveScroll: false,
+                    },
+                );
+            }
+            // If 1-2 characters, do nothing (wait for more input)
+        }, 500); // 500ms debounce
+
+        return () => clearTimeout(timeoutId);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [search]);
+
+    const handleClearSearch = () => {
+        setSearch('');
+    };
+
+    // Get per_page from URL
+    const getPerPageFromUrl = () => {
+        if (typeof window !== 'undefined') {
+            const urlParams = new URLSearchParams(window.location.search);
+            const perPage = urlParams.get('per_page');
+            return perPage ? Number(perPage) : roles.per_page;
+        }
+        return roles.per_page;
+    };
+
+    const [perPage, setPerPage] = useState(getPerPageFromUrl());
+
+    // Update per_page when URL changes
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const urlParams = new URLSearchParams(window.location.search);
+            const perPageParam = urlParams.get('per_page');
+            if (perPageParam) {
+                setPerPage(Number(perPageParam));
+            }
+        }
+    }, [url, roles.per_page]);
+
+    const getPaginationUrl = (page: number) => {
+        const params = new URLSearchParams();
+        params.set('page', String(page));
+        if (search.trim()) {
+            params.set('filter[search]', search.trim());
+        }
+        if (perPage !== 10) {
+            params.set('per_page', String(perPage));
+        }
+        return `/roles?${params.toString()}`;
+    };
+
+    const handlePerPageChange = (newPerPage: number) => {
+        setPerPage(newPerPage);
+        const params = new URLSearchParams();
+        if (search.trim()) {
+            params.set('filter[search]', search.trim());
+        }
+        params.set('per_page', String(newPerPage));
+        // Reset to page 1 when changing per_page
+        params.set('page', '1');
+
+        router.get(
+            `/roles?${params.toString()}`,
+            {},
+            {
+                preserveState: true,
+                preserveScroll: false,
+            },
+        );
     };
 
     return (
@@ -83,7 +212,35 @@ export default function RolesIndex({ roles }: RolesIndexProps) {
                     </div>
                 </div>
 
-                <div className="rounded-lg border bg-card">
+                <div className="rounded-lg border bg-card p-4">
+                    <div className="mb-4">
+                        <div className="relative">
+                            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                type="text"
+                                placeholder="Search roles by name or guard... (min 3 characters)"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="pr-10 pl-10"
+                            />
+                            {search && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleClearSearch}
+                                    className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 p-0"
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            )}
+                        </div>
+                        {search.length > 0 && search.length < 3 && (
+                            <p className="mt-2 text-xs text-muted-foreground">
+                                Type at least 3 characters to search
+                            </p>
+                        )}
+                    </div>
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
@@ -156,8 +313,9 @@ export default function RolesIndex({ roles }: RolesIndexProps) {
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() =>
-                                                            handleDelete(
+                                                            handleDeleteClick(
                                                                 role.id,
+                                                                role.name,
                                                             )
                                                         }
                                                     >
@@ -172,36 +330,26 @@ export default function RolesIndex({ roles }: RolesIndexProps) {
                         </table>
                     </div>
 
-                    {roles.last_page > 1 && (
-                        <div className="flex items-center justify-between border-t px-4 py-3">
-                            <div className="text-sm text-muted-foreground">
-                                Showing {roles.data.length} of {roles.total}{' '}
-                                roles
-                            </div>
-                            <div className="flex gap-2">
-                                {roles.current_page > 1 && (
-                                    <Link
-                                        href={`/roles?page=${roles.current_page - 1}`}
-                                    >
-                                        <Button variant="outline" size="sm">
-                                            Previous
-                                        </Button>
-                                    </Link>
-                                )}
-                                {roles.current_page < roles.last_page && (
-                                    <Link
-                                        href={`/roles?page=${roles.current_page + 1}`}
-                                    >
-                                        <Button variant="outline" size="sm">
-                                            Next
-                                        </Button>
-                                    </Link>
-                                )}
-                            </div>
-                        </div>
-                    )}
+                    <div className="border-t">
+                        <DataTablePagination
+                            currentPage={roles.current_page}
+                            lastPage={roles.last_page}
+                            perPage={perPage}
+                            total={roles.total}
+                            onPageChange={getPaginationUrl}
+                            onPerPageChange={handlePerPageChange}
+                        />
+                    </div>
                 </div>
             </div>
+
+            <DeleteConfirmationModal
+                isOpen={deleteModalOpen}
+                onClose={handleDeleteCancel}
+                onConfirm={handleDeleteConfirm}
+                title="Delete Role"
+                description={`Are you sure you want to delete ${roleToDelete?.name}? This action cannot be undone.`}
+            />
         </AppLayout>
     );
 }

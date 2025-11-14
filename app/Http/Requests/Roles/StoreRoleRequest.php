@@ -3,20 +3,11 @@
 namespace App\Http\Requests\Roles;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 
 class StoreRoleRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return Gate::forUser($this->user())->allows('access-superadmin');
-    }
-
     /**
      * Get the validation rules that apply to the request.
      *

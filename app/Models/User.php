@@ -88,7 +88,6 @@ class User extends Authenticatable
      * Scope a query to search users by name or email.
      *
      * @param  Builder<User>  $query
-     * @param  string  $search
      * @return Builder<User>
      */
     public function scopeSearch(Builder $query, string $search): Builder

@@ -4,7 +4,7 @@ import {
     type Role,
     type SharedData,
 } from '@/types';
-import { Form, Head, Link, router, usePage } from '@inertiajs/react';
+import { Form, Head, Link, usePage } from '@inertiajs/react';
 import { ArrowLeft, Check } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -14,7 +14,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
-import { dashboard } from '@/routes';
 
 interface RolesFormProps {
     role?: Role;
@@ -22,15 +21,8 @@ interface RolesFormProps {
 }
 
 export default function RolesForm({ role, permissions }: RolesFormProps) {
-    const { auth, url } = usePage<SharedData>().props;
+    const { url } = usePage<SharedData>().props;
     const isEditMode = !!role;
-
-    // Check if user has superadmin role, redirect if not
-    useEffect(() => {
-        if (auth.user?.role !== 'superadmin') {
-            router.visit(dashboard().url);
-        }
-    }, [auth.user?.role]);
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -42,10 +34,6 @@ export default function RolesForm({ role, permissions }: RolesFormProps) {
             href: isEditMode ? `/roles/${role?.id}/edit` : '/roles/create',
         },
     ];
-
-    if (auth.user?.role !== 'superadmin') {
-        return null;
-    }
 
     const [formData, setFormData] = useState({
         name: role?.name ?? '',
@@ -108,17 +96,9 @@ export default function RolesForm({ role, permissions }: RolesFormProps) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [role?.id, rolePermissionsKey, url]); // Update when role ID, permissions, or URL changes
 
-    const formAction = isEditMode ? `/roles/${role?.id}` : '/roles';
-    const formMethod = isEditMode ? 'patch' : 'post';
-    const pageTitle = isEditMode ? 'Edit Role' : 'Create Role';
-    const pageDescription = isEditMode
-        ? 'Update role details and permissions'
-        : 'Create a new role with permissions';
-    const submitButtonText = isEditMode ? 'Update Role' : 'Create Role';
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={pageTitle} />
+            <Head title={isEditMode ? 'Edit Role' : 'Create Role'} />
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <div className="flex items-center gap-4">
@@ -128,17 +108,21 @@ export default function RolesForm({ role, permissions }: RolesFormProps) {
                         </Button>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold">{pageTitle}</h1>
+                        <h1 className="text-2xl font-bold">
+                            {isEditMode ? 'Edit Role' : 'Create Role'}
+                        </h1>
                         <p className="text-muted-foreground">
-                            {pageDescription}
+                            {isEditMode
+                                ? 'Update role details and permissions'
+                                : 'Create a new role with permissions'}
                         </p>
                     </div>
                 </div>
 
                 <div className="rounded-lg border bg-card p-6">
                     <Form
-                        action={formAction}
-                        method={formMethod}
+                        action={isEditMode ? `/roles/${role?.id}` : '/roles'}
+                        method={isEditMode ? 'patch' : 'post'}
                         className="space-y-6"
                     >
                         {({ processing, errors }) => (
@@ -389,7 +373,7 @@ export default function RolesForm({ role, permissions }: RolesFormProps) {
                                 <div className="flex items-center gap-4">
                                     <Button type="submit" disabled={processing}>
                                         <Check className="mr-2 h-4 w-4" />
-                                        {submitButtonText}
+                                        {isEditMode ? 'Update Role' : 'Create Role'}
                                     </Button>
                                     <Link href="/roles">
                                         <Button variant="outline" type="button">
