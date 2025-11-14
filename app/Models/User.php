@@ -90,7 +90,8 @@ class User extends Authenticatable
      * @param  Builder<User>  $query
      * @return Builder<User>
      */
-    public function scopeSearch(Builder $query, string $search): Builder
+    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    protected function search(Builder $query, string $search): Builder
     {
         return $query->where(function (Builder $q) use ($search) {
             $q->where('name', 'like', "%{$search}%")
