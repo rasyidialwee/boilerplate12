@@ -78,4 +78,12 @@ class UserFactory extends Factory
             $user->assignRole($role);
         });
     }
+
+    public function asUser(): static
+    {
+        return $this->afterCreating(function ($user) {
+            $role = Role::firstOrCreate(['name' => 'user']);
+            $user->assignRole($role);
+        });
+    }
 }

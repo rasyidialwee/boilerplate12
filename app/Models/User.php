@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -81,5 +82,20 @@ class User extends Authenticatable
         return Attribute::make(
             get: fn () => $this->roles->first()?->name ? ucfirst($this->roles->first()->name) : null,
         );
+    }
+
+    /**
+     * Scope a query to search users by name or email.
+     *
+     * @param  Builder<User>  $query
+     * @param  string  $search
+     * @return Builder<User>
+     */
+    public function scopeSearch(Builder $query, string $search): Builder
+    {
+        return $query->where(function (Builder $q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%");
+        });
     }
 }

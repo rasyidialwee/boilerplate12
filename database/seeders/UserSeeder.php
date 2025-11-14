@@ -27,5 +27,7 @@ class UserSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
+        User::factory(100)->asUser()->create();
+
     }
 }

@@ -19,6 +19,7 @@
         "laravel/tinker": "^2.10.1",
         "laravel/wayfinder": "^0.1.9",
         "spatie/laravel-permission": "^6.9",
+        "spatie/laravel-query-builder": "^6.3",
         "spatie/laravel-settings": "^3.5"
     },
     "require-dev": {

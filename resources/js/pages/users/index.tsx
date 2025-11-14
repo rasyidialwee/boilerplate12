@@ -1,10 +1,12 @@
 import { type BreadcrumbItem, type SharedData, type User } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Pencil, Plus, Trash2, Users } from 'lucide-react';
-import { useState } from 'react';
+import { Pencil, Plus, Search, Trash2, Users, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
+import DataTablePagination from '@/components/data-table-pagination';
 import DeleteConfirmationModal from '@/components/delete-confirmation-modal';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/app-layout';
 
 interface UsersIndexProps {
@@ -18,12 +20,23 @@ interface UsersIndexProps {
 }
 
 export default function UsersIndex({ users }: UsersIndexProps) {
-    const { auth } = usePage<SharedData>().props;
+    const { auth, url } = usePage<SharedData>().props;
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState<{
         id: number;
         name: string;
     } | null>(null);
+
+    // Get search value from URL
+    const getSearchFromUrl = () => {
+        if (typeof window !== 'undefined') {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('filter[search]') || '';
+        }
+        return '';
+    };
+
+    const [search, setSearch] = useState(getSearchFromUrl());
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -53,6 +66,113 @@ export default function UsersIndex({ users }: UsersIndexProps) {
         setUserToDelete(null);
     };
 
+    // Update search when URL changes (e.g., back button)
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const urlParams = new URLSearchParams(window.location.search);
+            const searchParam = urlParams.get('filter[search]') || '';
+            setSearch(searchParam);
+        }
+    }, [url]);
+
+    // Debounced search - triggers when search has at least 3 characters
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const timeoutId = setTimeout(() => {
+            const params = new URLSearchParams();
+            const trimmedSearch = search.trim();
+            const currentParams = new URLSearchParams(window.location.search);
+            const hasExistingFilter = currentParams.has('filter[search]');
+
+            // Only search if 3+ characters
+            if (trimmedSearch.length >= 3) {
+                params.set('filter[search]', trimmedSearch);
+                router.get(
+                    `/users?${params.toString()}`,
+                    {},
+                    {
+                        preserveState: true,
+                        preserveScroll: false,
+                    },
+                );
+            } else if (trimmedSearch.length === 0 && hasExistingFilter) {
+                // Clear filter if search is empty and there was a previous filter
+                router.get(
+                    '/users',
+                    {},
+                    {
+                        preserveState: true,
+                        preserveScroll: false,
+                    },
+                );
+            }
+            // If 1-2 characters, do nothing (wait for more input)
+        }, 500); // 500ms debounce
+
+        return () => clearTimeout(timeoutId);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [search]);
+
+    const handleClearSearch = () => {
+        setSearch('');
+    };
+
+    // Get per_page from URL
+    const getPerPageFromUrl = () => {
+        if (typeof window !== 'undefined') {
+            const urlParams = new URLSearchParams(window.location.search);
+            const perPage = urlParams.get('per_page');
+            return perPage ? Number(perPage) : users.per_page;
+        }
+        return users.per_page;
+    };
+
+    const [perPage, setPerPage] = useState(getPerPageFromUrl());
+
+    // Update per_page when URL changes
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const urlParams = new URLSearchParams(window.location.search);
+            const perPageParam = urlParams.get('per_page');
+            if (perPageParam) {
+                setPerPage(Number(perPageParam));
+            }
+        }
+    }, [url, users.per_page]);
+
+    const getPaginationUrl = (page: number) => {
+        const params = new URLSearchParams();
+        params.set('page', String(page));
+        if (search.trim()) {
+            params.set('filter[search]', search.trim());
+        }
+        if (perPage !== 10) {
+            params.set('per_page', String(perPage));
+        }
+        return `/users?${params.toString()}`;
+    };
+
+    const handlePerPageChange = (newPerPage: number) => {
+        setPerPage(newPerPage);
+        const params = new URLSearchParams();
+        if (search.trim()) {
+            params.set('filter[search]', search.trim());
+        }
+        params.set('per_page', String(newPerPage));
+        // Reset to page 1 when changing per_page
+        params.set('page', '1');
+
+        router.get(
+            `/users?${params.toString()}`,
+            {},
+            {
+                preserveState: true,
+                preserveScroll: false,
+            },
+        );
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Users" />
@@ -73,7 +193,35 @@ export default function UsersIndex({ users }: UsersIndexProps) {
                     </Link>
                 </div>
 
-                <div className="rounded-lg border bg-card">
+                <div className="rounded-lg border bg-card p-4">
+                    <div className="mb-4">
+                        <div className="relative">
+                            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                type="text"
+                                placeholder="Search users by name or email... (min 3 characters)"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="pr-10 pl-10"
+                            />
+                            {search && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleClearSearch}
+                                    className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 p-0"
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            )}
+                        </div>
+                        {search.length > 0 && search.length < 3 && (
+                            <p className="mt-2 text-xs text-muted-foreground">
+                                Type at least 3 characters to search
+                            </p>
+                        )}
+                    </div>
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
@@ -170,34 +318,16 @@ export default function UsersIndex({ users }: UsersIndexProps) {
                         </table>
                     </div>
 
-                    {users.last_page > 1 && (
-                        <div className="flex items-center justify-between border-t px-4 py-3">
-                            <div className="text-sm text-muted-foreground">
-                                Showing {users.data.length} of {users.total}{' '}
-                                users
-                            </div>
-                            <div className="flex gap-2">
-                                {users.current_page > 1 && (
-                                    <Link
-                                        href={`/users?page=${users.current_page - 1}`}
-                                    >
-                                        <Button variant="outline" size="sm">
-                                            Previous
-                                        </Button>
-                                    </Link>
-                                )}
-                                {users.current_page < users.last_page && (
-                                    <Link
-                                        href={`/users?page=${users.current_page + 1}`}
-                                    >
-                                        <Button variant="outline" size="sm">
-                                            Next
-                                        </Button>
-                                    </Link>
-                                )}
-                            </div>
-                        </div>
-                    )}
+                    <div className="border-t">
+                        <DataTablePagination
+                            currentPage={users.current_page}
+                            lastPage={users.last_page}
+                            perPage={perPage}
+                            total={users.total}
+                            onPageChange={getPaginationUrl}
+                            onPerPageChange={handlePerPageChange}
+                        />
+                    </div>
                 </div>
             </div>
 

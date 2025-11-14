@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Role;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
 
 class UserController extends Controller
 {
@@ -25,9 +27,20 @@ class UserController extends Controller
     {
         Gate::authorize('viewAny', User::class);
 
-        $users = User::with('roles')
-            ->latest()
-            ->paginate(15);
+        $perPage = $request->get('per_page', 10);
+        $perPage = in_array($perPage, [10, 25, 50, 100]) ? (int) $perPage : 10;
+
+        $users = QueryBuilder::for(User::class)
+            ->allowedFilters([
+                AllowedFilter::scope('search'),
+                AllowedFilter::exact('role', 'roles.name'),
+            ])
+            ->allowedSorts(['name', 'email', 'created_at'])
+            ->allowedIncludes(['roles'])
+            ->defaultSort('-created_at')
+            ->with('roles')
+            ->paginate($perPage)
+            ->withQueryString();
 
         return Inertia::render('users/index', [
             'users' => $users,
