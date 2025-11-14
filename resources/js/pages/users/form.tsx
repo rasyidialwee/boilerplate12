@@ -4,12 +4,14 @@ import {
     type SharedData,
     type User,
 } from '@/types';
-import { Form, Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { ArrowLeft, Check } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -17,10 +19,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
-import { dashboard } from '@/routes';
+import { useForm } from 'laravel-precognition-react-inertia';
 
 interface UsersFormProps {
     user?: User;
@@ -30,13 +30,6 @@ interface UsersFormProps {
 export default function UsersForm({ user, roles }: UsersFormProps) {
     const { auth, url } = usePage<SharedData>().props;
     const isEditMode = !!user;
-
-    // Check if user has admin or superadmin role, redirect if not
-    useEffect(() => {
-        if (auth.user?.role !== 'superadmin' && auth.user?.role !== 'admin') {
-            router.visit(dashboard().url);
-        }
-    }, [auth.user?.role]);
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -49,53 +42,80 @@ export default function UsersForm({ user, roles }: UsersFormProps) {
         },
     ];
 
-    if (auth.user?.role !== 'superadmin' && auth.user?.role !== 'admin') {
-        return null;
-    }
+    // Initialize Precognition form
+    const form = useForm(
+        isEditMode ? 'patch' : 'post',
+        isEditMode ? `/users/${user?.id}` : '/users',
+        {
+            name: user?.name ?? '',
+            email: user?.email ?? '',
+            password: '',
+            role: user?.roles?.[0]?.id ?? '',
+        },
+    );
 
-    const [formData, setFormData] = useState<{
-        name: string;
-        email: string;
-        password: string;
-        role: number | '';
-    }>({
-        name: user?.name ?? '',
-        email: user?.email ?? '',
-        password: '',
-        role: user?.roles?.[0]?.id ?? '',
-    });
+    const submitForm = () => {
+        if (!form.processing) {
+            form.submit({
+                onSuccess: () => {
+                    router.visit('/users');
+                },
+            });
+        }
+    };
+
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        submitForm();
+    };
+
+    const handleKeyDown = useCallback(
+        (e: React.KeyboardEvent<HTMLFormElement>) => {
+            // Prevent form submission on Enter key unless explicitly on submit button
+            if (e.key === 'Enter') {
+                const target = e.target as HTMLElement;
+                if (
+                    target instanceof HTMLButtonElement &&
+                    target.type === 'submit'
+                ) {
+                    // Allow Enter on submit button - form's onSubmit will handle it
+                    return;
+                }
+                e.preventDefault();
+            }
+        },
+        [],
+    );
+
+    const rolesOptions = useMemo(
+        () =>
+            roles.map((role) => (
+                <SelectItem key={role.id} value={role.id.toString()}>
+                    {role.name}
+                </SelectItem>
+            )),
+        [roles],
+    );
 
     // Update form data when user prop changes
     useEffect(() => {
         if (user) {
-            setFormData({
-                name: user.name ?? '',
-                email: user.email ?? '',
-                password: '',
-                role: user.roles?.[0]?.id ?? '',
-            });
+            form.setData('name', user.name ?? '');
+            form.setData('email', user.email ?? '');
+            form.setData('password', '');
+            form.setData('role', user.roles?.[0]?.id ?? '');
         } else {
-            setFormData({
-                name: '',
-                email: '',
-                password: '',
-                role: '',
-            });
+            form.setData('name', '');
+            form.setData('email', '');
+            form.setData('password', '');
+            form.setData('role', '');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.id, url]);
 
-    const formAction = isEditMode ? `/users/${user?.id}` : '/users';
-    const formMethod = isEditMode ? 'patch' : 'post';
-    const pageTitle = isEditMode ? 'Edit User' : 'Create User';
-    const pageDescription = isEditMode
-        ? 'Update user details and role'
-        : 'Create a new user with role assignment. A secure password will be automatically generated and sent to the user via email.';
-    const submitButtonText = isEditMode ? 'Update User' : 'Create User';
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={pageTitle} />
+            <Head title={isEditMode ? 'Edit User' : 'Create User'} />
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <div className="flex items-center gap-4">
@@ -105,154 +125,120 @@ export default function UsersForm({ user, roles }: UsersFormProps) {
                         </Button>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold">{pageTitle}</h1>
+                        <h1 className="text-2xl font-bold">
+                            {isEditMode ? 'Edit User' : 'Create User'}
+                        </h1>
                         <p className="text-muted-foreground">
-                            {pageDescription}
+                            {isEditMode
+                                ? 'Update user details and role'
+                                : 'Create a new user with role assignment. A secure password will be automatically generated and sent to the user via email.'}
                         </p>
                     </div>
                 </div>
 
                 <div className="rounded-lg border bg-card p-6">
-                    <Form
-                        action={formAction}
-                        method={formMethod}
+                    <form
+                        onSubmit={handleSubmit}
+                        onKeyDown={handleKeyDown}
                         className="space-y-6"
                     >
-                        {({ processing, errors }) => (
-                            <>
-                                <div className="space-y-2">
-                                    <Label htmlFor="name">
-                                        Name{' '}
-                                        <span className="text-destructive">
-                                            *
-                                        </span>
-                                    </Label>
-                                    <Input
-                                        id="name"
-                                        name="name"
-                                        value={formData.name}
-                                        onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                name: e.target.value,
-                                            })
-                                        }
-                                        placeholder="John Doe"
-                                        required
-                                    />
-                                    <InputError message={errors.name} />
-                                </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="name">
+                                Name <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                                id="name"
+                                name="name"
+                                value={form.data.name}
+                                onChange={(e) =>
+                                    form.setData('name', e.target.value)
+                                }
+                                onBlur={() => form.validate('name')}
+                                placeholder="John Doe"
+                                required
+                            />
+                            <InputError message={form.errors.name} />
+                        </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="email">
-                                        Email{' '}
-                                        <span className="text-destructive">
-                                            *
-                                        </span>
-                                    </Label>
-                                    <Input
-                                        id="email"
-                                        name="email"
-                                        type="email"
-                                        value={formData.email}
-                                        onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                email: e.target.value,
-                                            })
-                                        }
-                                        placeholder="john@example.com"
-                                        required
-                                    />
-                                    <InputError message={errors.email} />
-                                </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="email">
+                                Email{' '}
+                                <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                                id="email"
+                                name="email"
+                                type="email"
+                                value={form.data.email}
+                                onChange={(e) =>
+                                    form.setData('email', e.target.value)
+                                }
+                                onBlur={() => form.validate('email')}
+                                placeholder="john@example.com"
+                                required
+                            />
+                            <InputError message={form.errors.email} />
+                        </div>
 
-                                {isEditMode && (
-                                    <div className="space-y-2">
-                                        <Label htmlFor="password">
-                                            Password
-                                        </Label>
-                                        <Input
-                                            id="password"
-                                            name="password"
-                                            type="password"
-                                            value={formData.password}
-                                            onChange={(e) =>
-                                                setFormData({
-                                                    ...formData,
-                                                    password: e.target.value,
-                                                })
-                                            }
-                                            placeholder="Leave blank to keep current password"
-                                        />
-                                        <InputError message={errors.password} />
-                                        <p className="text-xs text-muted-foreground">
-                                            Leave blank to keep the current
-                                            password
-                                        </p>
-                                    </div>
-                                )}
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="role">
-                                        Role{' '}
-                                        <span className="text-destructive">
-                                            *
-                                        </span>
-                                    </Label>
-                                    <Select
-                                        value={
-                                            formData.role
-                                                ? formData.role.toString()
-                                                : undefined
-                                        }
-                                        onValueChange={(value) =>
-                                            setFormData({
-                                                ...formData,
-                                                role: parseInt(value),
-                                            })
-                                        }
-                                        required
-                                    >
-                                        <SelectTrigger id="role">
-                                            <SelectValue placeholder="Select a role" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {roles.map((role) => (
-                                                <SelectItem
-                                                    key={role.id}
-                                                    value={role.id.toString()}
-                                                >
-                                                    {role.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <input
-                                        type="hidden"
-                                        name="role"
-                                        value={formData.role || ''}
-                                    />
-                                    <InputError message={errors.role} />
-                                </div>
-
-                                <div className="flex items-center gap-4">
-                                    <Button type="submit" disabled={processing}>
-                                        <Check className="mr-2 h-4 w-4" />
-                                        {submitButtonText}
-                                    </Button>
-                                    <Link href="/users">
-                                        <Button variant="outline" type="button">
-                                            Cancel
-                                        </Button>
-                                    </Link>
-                                </div>
-                            </>
+                        {isEditMode && (
+                            <div className="space-y-2">
+                                <Label htmlFor="password">Password</Label>
+                                <Input
+                                    id="password"
+                                    name="password"
+                                    type="password"
+                                    value={form.data.password}
+                                    onChange={(e) =>
+                                        form.setData('password', e.target.value)
+                                    }
+                                    onBlur={() => form.validate('password')}
+                                    placeholder="Leave blank to keep current password"
+                                />
+                                <InputError message={form.errors.password} />
+                                <p className="text-xs text-muted-foreground">
+                                    Leave blank to keep the current password
+                                </p>
+                            </div>
                         )}
-                    </Form>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="role">
+                                Role <span className="text-destructive">*</span>
+                            </Label>
+                            <Select
+                                value={
+                                    form.data.role
+                                        ? form.data.role.toString()
+                                        : undefined
+                                }
+                                onValueChange={(value) => {
+                                    form.setData('role', parseInt(value));
+                                    form.validate('role');
+                                }}
+                                required
+                            >
+                                <SelectTrigger id="role">
+                                    <SelectValue placeholder="Select a role" />
+                                </SelectTrigger>
+                                <SelectContent>{rolesOptions}</SelectContent>
+                            </Select>
+                            <InputError message={form.errors.role} />
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                            <Button type="submit" disabled={form.processing}>
+                                <Check className="mr-2 h-4 w-4" />
+                                {isEditMode ? 'Update User' : 'Create User'}
+                            </Button>
+                            <Link href="/users">
+                                <Button variant="outline" type="button">
+                                    Cancel
+                                </Button>
+                            </Link>
+                        </div>
+                    </form>
                 </div>
             </div>
         </AppLayout>
     );
 }
-

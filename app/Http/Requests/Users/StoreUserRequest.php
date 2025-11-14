@@ -30,4 +30,12 @@ class StoreUserRequest extends FormRequest
             'role' => ['required', 'integer', Rule::exists(Role::class, 'id')],
         ];
     }
+
+    /**
+     * Handle a passed validation attempt.
+     */
+    protected function passedValidation(): void
+    {
+        //
+    }
 }

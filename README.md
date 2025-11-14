@@ -18,6 +18,7 @@ A modern Laravel 12 application with React and TypeScript, powered by Inertia.js
 - **Code Quality**: Larastan (PHPStan), Rector
 - **Permissions**: Spatie Laravel Permission
 - **Frontend Tools**: ESLint, Prettier
+- **Form Validation**: Laravel Precognition (real-time validation)
 
 ## 📋 Prerequisites
 
@@ -349,6 +350,87 @@ sail npm run format:check
 
 ESLint is configured in `eslint.config.js` with React, TypeScript, and Prettier integration. Prettier is configured in `.prettierrc` with Tailwind CSS plugin support.
 
+### Laravel Precognition
+
+This project uses [Laravel Precognition](https://laravel.com/docs/12.x/precognition) for real-time form validation. Precognition provides instant validation feedback as users type, without requiring a full form submission.
+
+#### How It Works
+
+Precognition validates form fields in real-time by sending lightweight validation requests to your Laravel backend. The validation rules are defined in your FormRequest classes, ensuring consistency between client-side and server-side validation.
+
+#### Using Precognition in Forms
+
+This project uses `laravel-precognition-react-inertia` which provides seamless integration between Laravel Precognition and Inertia.js. Here's an example of how to use it:
+
+```tsx
+import { useForm } from 'laravel-precognition-react-inertia';
+import { router } from '@inertiajs/react';
+
+export default function UserForm() {
+    const form = useForm(
+        'post',
+        '/users',
+        {
+            name: '',
+            email: '',
+            role: '',
+        },
+        {
+            onSuccess: () => {
+                router.visit('/users');
+            },
+        },
+    );
+
+    return (
+        <form onSubmit={(e) => { e.preventDefault(); form.submit(); }}>
+            <input
+                value={form.data.name}
+                onChange={(e) => form.setData('name', e.target.value)}
+                onBlur={() => form.validate('name')}
+            />
+            {form.errors.name && <span>{form.errors.name}</span>}
+            
+            <button type="submit" disabled={form.processing}>
+                Submit
+            </button>
+        </form>
+    );
+}
+```
+
+#### Key Features
+
+- **Real-time Validation**: Fields are validated as users interact with them (on blur)
+- **Server-side Rules**: Uses the same validation rules as your Laravel FormRequest classes
+- **Inertia Integration**: Seamlessly works with Inertia.js for SPA navigation
+- **Type Safety**: Full TypeScript support
+
+#### Backend Setup
+
+1. **Middleware**: The `HandlePrecognitiveRequests` middleware is applied to routes that use Precognition:
+
+```php
+use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
+
+Route::middleware([HandlePrecognitiveRequests::class])->group(function () {
+    Route::resources([
+        'users' => UserController::class,
+    ]);
+});
+```
+
+2. **FormRequest Classes**: Your FormRequest classes automatically work with Precognition. No additional configuration needed.
+
+#### Example Form Component
+
+See `resources/js/pages/users/form.tsx` for a complete example of a form using Precognition with:
+- Text inputs with real-time validation
+- Select dropdowns
+- Conditional fields (password field only in edit mode)
+- Error display
+- Loading states
+
 ### Queue Management (Laravel Horizon)
 
 Horizon provides a dashboard and monitoring for your Redis queues. Access it at `http://localhost/horizon` (requires permission: `view horizon`).
@@ -520,6 +602,7 @@ sail build --no-cache
 - [Prettier Documentation](https://prettier.io/)
 - [Larastan Documentation](https://github.com/larastan/larastan)
 - [Rector Laravel Documentation](https://github.com/driftingly/rector-laravel)
+- [Laravel Precognition Documentation](https://laravel.com/docs/12.x/precognition)
 
 ## 📄 License
 

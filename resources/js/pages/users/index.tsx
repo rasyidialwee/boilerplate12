@@ -1,11 +1,11 @@
 import { type BreadcrumbItem, type SharedData, type User } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Pencil, Plus, Trash2, Users } from 'lucide-react';
-import { useEffect } from 'react';
+import { useState } from 'react';
 
+import DeleteConfirmationModal from '@/components/delete-confirmation-modal';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
-import { dashboard } from '@/routes';
 
 interface UsersIndexProps {
     users: {
@@ -19,13 +19,11 @@ interface UsersIndexProps {
 
 export default function UsersIndex({ users }: UsersIndexProps) {
     const { auth } = usePage<SharedData>().props;
-
-    // Check if user has admin or superadmin role, redirect if not
-    useEffect(() => {
-        if (auth.user?.role !== 'superadmin' && auth.user?.role !== 'admin') {
-            router.visit(dashboard().url);
-        }
-    }, [auth.user?.role]);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [userToDelete, setUserToDelete] = useState<{
+        id: number;
+        name: string;
+    } | null>(null);
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -34,14 +32,25 @@ export default function UsersIndex({ users }: UsersIndexProps) {
         },
     ];
 
-    if (auth.user?.role !== 'superadmin' && auth.user?.role !== 'admin') {
-        return null;
-    }
+    const handleDeleteClick = (userId: number, userName: string) => {
+        setUserToDelete({ id: userId, name: userName });
+        setDeleteModalOpen(true);
+    };
 
-    const handleDelete = (userId: number) => {
-        if (confirm('Are you sure you want to delete this user?')) {
-            router.delete(`/users/${userId}`);
+    const handleDeleteConfirm = () => {
+        if (userToDelete) {
+            router.delete(`/users/${userToDelete.id}`, {
+                onSuccess: () => {
+                    setDeleteModalOpen(false);
+                    setUserToDelete(null);
+                },
+            });
         }
+    };
+
+    const handleDeleteCancel = () => {
+        setDeleteModalOpen(false);
+        setUserToDelete(null);
     };
 
     return (
@@ -142,8 +151,9 @@ export default function UsersIndex({ users }: UsersIndexProps) {
                                                                 variant="ghost"
                                                                 size="sm"
                                                                 onClick={() =>
-                                                                    handleDelete(
+                                                                    handleDeleteClick(
                                                                         user.id,
+                                                                        user.name,
                                                                     )
                                                                 }
                                                             >
@@ -190,6 +200,14 @@ export default function UsersIndex({ users }: UsersIndexProps) {
                     )}
                 </div>
             </div>
+
+            <DeleteConfirmationModal
+                isOpen={deleteModalOpen}
+                onClose={handleDeleteCancel}
+                onConfirm={handleDeleteConfirm}
+                title="Delete User"
+                description={`Are you sure you want to delete ${userToDelete?.name}? This action cannot be undone.`}
+            />
         </AppLayout>
     );
 }

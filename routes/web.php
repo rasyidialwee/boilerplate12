@@ -3,6 +3,7 @@
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Settings\SystemSettings;
+use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -27,8 +28,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
 
-    Route::resources([
-        'users' => UserController::class,
-        'roles' => RoleController::class,
-    ]);
+    Route::middleware([HandlePrecognitiveRequests::class])->group(function () {
+        Route::resources([
+            'users' => UserController::class,
+            'roles' => RoleController::class,
+        ]);
+    });
 });
