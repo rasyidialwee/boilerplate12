@@ -1,5 +1,11 @@
 <?php
 
+use App\Models\User;
+use Illuminate\Support\Collection;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
@@ -32,16 +38,54 @@ expect()->extend('toBeOne', function () {
 
 /*
 |--------------------------------------------------------------------------
-| Functions
+| Helper functions
 |--------------------------------------------------------------------------
 |
-| While Pest is very powerful out-of-the-box, you may have some testing code specific to your
-| project that you don't want to repeat in every file. Here you can also expose helpers as
-| global functions to help you to reduce the number of lines of code in your test files.
+| Project-wide helpers shared across feature tests.
 |
 */
 
-function something()
+function permissionRegistrar(): PermissionRegistrar
 {
-    // ..
+    return app(PermissionRegistrar::class);
+}
+
+function resetPermissionCache(): void
+{
+    permissionRegistrar()->forgetCachedPermissions();
+}
+
+function ensurePermissions(array $permissionNames): Collection
+{
+    resetPermissionCache();
+
+    return collect($permissionNames)->map(fn ($name) => Permission::firstOrCreate(['name' => $name]));
+}
+
+function createRoleWithPermissions(string $name, array $permissionNames = []): Role
+{
+    $role = Role::firstOrCreate(['name' => $name]);
+
+    if ($permissionNames !== []) {
+        $permissions = ensurePermissions($permissionNames);
+        $role->syncPermissions($permissions);
+    }
+
+    return $role;
+}
+
+function createSuperAdmin(array $attributes = []): User
+{
+    resetPermissionCache();
+
+    return User::factory()->asSuperadmin()->create($attributes);
+}
+
+function createUserWithPermissions(array $permissionNames, array $attributes = []): User
+{
+    $user = User::factory()->create($attributes);
+    $permissions = ensurePermissions($permissionNames);
+    $user->syncPermissions($permissions);
+
+    return $user;
 }

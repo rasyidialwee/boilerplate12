@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\Settings\PasswordController;
+use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\Settings\TwoFactorAuthenticationController;
 use App\Http\Controllers\UserController;
 use App\Settings\SystemSettings;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
@@ -34,4 +37,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'roles' => RoleController::class,
         ]);
     });
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::get('user/password', [PasswordController::class, 'edit'])->name('user-password.edit');
+    Route::put('user/password', [PasswordController::class, 'update'])->name('user-password.update');
+
+    Route::get('two-factor', [TwoFactorAuthenticationController::class, 'show'])->name('two-factor.show');
 });
