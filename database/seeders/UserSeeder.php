@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class UserSeeder extends Seeder
 {
@@ -13,19 +14,31 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory()->asSuperadmin()->create([
-            'name' => 'Super Admin',
-            'email' => 'superadmin@skyrem.my',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
+        $superadmin = User::firstOrCreate(
+            ['email' => 'superadmin@skyrem.my'],
+            [
+                'name' => 'Super Admin',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]
+        );
+        if (!$superadmin->hasRole('superadmin')) {
+            $role = Role::firstOrCreate(['name' => 'superadmin']);
+            $superadmin->assignRole($role);
+        }
 
-        User::factory()->asAdmin()->create([
-            'name' => 'Admin',
-            'email' => 'admin@skyrem.my',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@skyrem.my'],
+            [
+                'name' => 'Admin',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]
+        );
+        if (!$admin->hasRole('admin')) {
+            $role = Role::firstOrCreate(['name' => 'admin']);
+            $admin->assignRole($role);
+        }
 
         User::factory(100)->asUser()->create();
 
