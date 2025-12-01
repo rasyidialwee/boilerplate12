@@ -50,24 +50,12 @@ docker run --rm \
     composer install --ignore-platform-reqs
 ```
 
-**Alternative**: If you have Composer installed locally:
-
-```bash
-composer install
-```
-
 ### 3. Configure Environment
 
 Copy the example environment file:
 
 ```bash
 cp .env.example .env
-```
-
-Or if using Sail:
-
-```bash
-sail cp .env.example .env
 ```
 
 ### 4. Generate Application Key
@@ -85,25 +73,19 @@ sail npm install
 ### 6. Build Assets
 
 ```bash
-sail npm run build
-```
-
-Or for development (watch mode):
-
-```bash
 sail npm run dev
 ```
 
-### 7. Run Database Migrations
+### 7. Run Database Migrations and seeding
 
 ```bash
-sail artisan migrate
+sail artisan migrate --seed
 ```
 
-### 8. Seed Roles and Permissions
+or run migrate:fresh for re seed
 
 ```bash
-sail artisan db:seed
+sail artisan migrate:fresh --seed
 ```
 
 This will create initial roles (admin, user) and permissions (view telescope, view horizon). Only the admin role has access to Telescope and Horizon dashboards. Assign roles to users as needed.
@@ -115,7 +97,7 @@ This will create initial roles (admin, user) and permissions (view telescope, vi
 Start all services:
 
 ```bash
-sail up -d
+./vendor/bin/sail up -d
 ```
 
 Or use the shorter alias (if configured):
@@ -134,36 +116,10 @@ This will start:
 
 **Note**: Reverb websocket server should be started separately with `sail artisan reverb:start`
 
-### Running Artisan Commands
 
-All artisan commands should be prefixed with `sail`:
-
-```bash
-# Run migrations
-sail artisan migrate
-
-# Create a controller
-sail artisan make:controller ExampleController
-
-# Clear cache
-sail artisan cache:clear
-
-# Run tests
-sail artisan test
+# Liner, Code Format and Types Check
 ```
-
-### Running NPM Commands
-
-Similarly, npm commands should be prefixed:
-
-```bash
-# Development mode (watch)
-sail npm run dev
-
-# Build for production
-sail npm run build
-
-# Run linter
+# Linter
 sail npm run lint
 
 # Format code
@@ -172,26 +128,6 @@ sail npm run format
 # Type checking
 sail npm run types
 ```
-
-### Convenience Setup Script
-
-**Note**: This script is only available after Sail is installed (after step 2). For first-time setup, follow the step-by-step instructions above.
-
-After Sail is installed, you can use the built-in setup script for subsequent setups:
-
-```bash
-sail composer run setup
-```
-
-This will automatically:
-
-- Install Composer dependencies
-- Copy `.env.example` to `.env` if it doesn't exist
-- Generate application key
-- Run migrations
-- Install npm dependencies
-- Build assets
-
 ## 🔧 Available Services
 
 When running `sail up`, the following services are available:
@@ -249,27 +185,6 @@ VITE_APP_NAME="${APP_NAME}"
 - **Password**: `password`
 - **Database**: Value from `DB_DATABASE` in `.env`
 
-## 🧪 Development Commands
-
-### PHP/Laravel
-
-```bash
-# Run tests
-sail artisan test
-
-# Run Pint (code formatter)
-sail artisan pint
-
-# Start queue worker (or use Horizon)
-sail artisan queue:work
-
-# Start Horizon (recommended for Redis queues)
-sail artisan horizon
-
-# Start Pail (log viewer)
-sail artisan pail
-```
-
 ### Code Analysis & Refactoring
 
 This project includes [Larastan](https://github.com/larastan/larastan) (PHPStan for Laravel) for static analysis and [Rector](https://github.com/rectorphp/rector) for automated refactoring.
@@ -311,28 +226,6 @@ Rector is configured in `rector.php` and automatically applies Laravel-specific 
 
 **Note**: Always review the changes in dry-run mode (`composer rector`) before applying fixes (`composer rector:fix`).
 
-### Frontend
-
-```bash
-# Development with hot reload
-sail npm run dev
-
-# Build for production
-sail npm run build
-
-# Build with SSR support
-sail npm run build:ssr
-
-# Lint and fix
-sail npm run lint
-
-# Format code
-sail npm run format
-
-# Type checking
-sail npm run types
-```
-
 #### ESLint and Prettier
 
 This project uses ESLint for code linting and Prettier for code formatting.
@@ -354,82 +247,11 @@ ESLint is configured in `eslint.config.js` with React, TypeScript, and Prettier 
 
 This project uses [Laravel Precognition](https://laravel.com/docs/12.x/precognition) for real-time form validation. Precognition provides instant validation feedback as users type, without requiring a full form submission.
 
-#### How It Works
 
-Precognition validates form fields in real-time by sending lightweight validation requests to your Laravel backend. The validation rules are defined in your FormRequest classes, ensuring consistency between client-side and server-side validation.
 
-#### Using Precognition in Forms
 
-This project uses `laravel-precognition-react-inertia` which provides seamless integration between Laravel Precognition and Inertia.js. Here's an example of how to use it:
 
-```tsx
-import { useForm } from 'laravel-precognition-react-inertia';
-import { router } from '@inertiajs/react';
 
-export default function UserForm() {
-    const form = useForm(
-        'post',
-        '/users',
-        {
-            name: '',
-            email: '',
-            role: '',
-        },
-        {
-            onSuccess: () => {
-                router.visit('/users');
-            },
-        },
-    );
-
-    return (
-        <form onSubmit={(e) => { e.preventDefault(); form.submit(); }}>
-            <input
-                value={form.data.name}
-                onChange={(e) => form.setData('name', e.target.value)}
-                onBlur={() => form.validate('name')}
-            />
-            {form.errors.name && <span>{form.errors.name}</span>}
-            
-            <button type="submit" disabled={form.processing}>
-                Submit
-            </button>
-        </form>
-    );
-}
-```
-
-#### Key Features
-
-- **Real-time Validation**: Fields are validated as users interact with them (on blur)
-- **Server-side Rules**: Uses the same validation rules as your Laravel FormRequest classes
-- **Inertia Integration**: Seamlessly works with Inertia.js for SPA navigation
-- **Type Safety**: Full TypeScript support
-
-#### Backend Setup
-
-1. **Middleware**: The `HandlePrecognitiveRequests` middleware is applied to routes that use Precognition:
-
-```php
-use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
-
-Route::middleware([HandlePrecognitiveRequests::class])->group(function () {
-    Route::resources([
-        'users' => UserController::class,
-    ]);
-});
-```
-
-2. **FormRequest Classes**: Your FormRequest classes automatically work with Precognition. No additional configuration needed.
-
-#### Example Form Component
-
-See `resources/js/pages/users/form.tsx` for a complete example of a form using Precognition with:
-- Text inputs with real-time validation
-- Select dropdowns
-- Conditional fields (password field only in edit mode)
-- Error display
-- Loading states
 
 ### Queue Management (Laravel Horizon)
 
@@ -493,20 +315,33 @@ This project uses Spatie Laravel Permission for role-based access control. Initi
 - `view telescope` - Access to Telescope dashboard (admin only)
 - `view horizon` - Access to Horizon dashboard (admin only)
 
-**Assigning Roles to Users:**
+**Generating Permissions:**
 
-```php
-$user = User::find(1);
-$user->assignRole('admin');  // Grant admin access
-// or
-$user->assignRole('user');   // Grant normal user access
+You can automatically generate permissions based on your models and actions using:
+
+```bash
+sail artisan permissions:generate
 ```
 
-**Checking Permissions:**
+This command will create permissions automatically based on models and actions (e.g., "create users", "edit users", "delete users"). This is useful for quickly setting up CRUD permissions for your resources.
 
-```php
-$user->hasPermissionTo('view telescope');
-$user->hasRole('admin');
+**Other Permission Commands:**
+
+```bash
+# Create a single permission
+sail artisan permission:create-permission "permission name"
+
+# Create a role
+sail artisan permission:create-role "role name"
+
+# Assign a role to a user
+sail artisan permission:assign-role
+
+# Show a table of roles and permissions
+sail artisan permission:show
+
+# Reset the permission cache
+sail artisan permission:cache-reset
 ```
 
 ## 🛑 Stopping Services
@@ -522,71 +357,6 @@ To stop and remove volumes (⚠️ this will delete database data):
 ```bash
 sail down -v
 ```
-
-## 📦 Project Structure
-
-```text
-boilerplate12/
-├── app/                    # Laravel application code
-├── bootstrap/              # Laravel bootstrap files
-├── config/                 # Configuration files
-├── database/               # Migrations, seeders, factories
-├── public/                 # Public web root
-├── resources/
-│   ├── css/               # Stylesheets
-│   ├── js/                # React/TypeScript source files
-│   └── views/             # Blade templates (if any)
-├── routes/                 # Route definitions
-├── storage/                # Storage files
-├── tests/                  # Test files
-├── vendor/                 # Composer dependencies
-├── compose.yaml            # Docker Compose configuration
-├── composer.json           # PHP dependencies
-├── package.json            # Node.js dependencies
-├── phpstan.neon            # Larastan (PHPStan) configuration
-├── rector.php              # Rector configuration
-└── vite.config.ts          # Vite configuration
-```
-
-## 🔍 Troubleshooting
-
-### Permission Issues
-
-If you encounter permission issues, you may need to fix file permissions:
-
-```bash
-sail shell
-chmod -R 775 storage bootstrap/cache
-chown -R sail:sail storage bootstrap/cache
-```
-
-### Port Already in Use
-
-If ports are already in use, modify the ports in your `.env` file:
-
-```env
-APP_PORT=8000
-VITE_PORT=5174
-FORWARD_DB_PORT=3307
-```
-
-### Clearing Cache
-
-```bash
-sail artisan cache:clear
-sail artisan config:clear
-sail artisan view:clear
-sail artisan route:clear
-```
-
-### Rebuilding Containers
-
-If you need to rebuild containers:
-
-```bash
-sail build --no-cache
-```
-
 ## 📚 Additional Resources
 
 - [Laravel Documentation](https://laravel.com/docs)
