@@ -13,7 +13,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Settings, Shield, Users } from 'lucide-react';
+import { FileText, LayoutGrid, Settings, Shield, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 export function AppSidebar() {
@@ -41,6 +41,11 @@ export function AppSidebar() {
     const footerNavItems: NavItem[] = [
         ...(isAdmin
             ? [
+                  {
+                      title: 'Activity Logs',
+                      href: '/activity-logs',
+                      icon: FileText,
+                  } as NavItem,
                   {
                       title: 'Settings',
                       href: '/settings/system',

@@ -17,6 +17,7 @@ class RolePermissionSeeder extends Seeder
         Permission::firstOrCreate(['name' => 'view telescope']);
         Permission::firstOrCreate(['name' => 'view horizon']);
         Permission::firstOrCreate(['name' => 'can-manage-system-settings']);
+        Permission::firstOrCreate(['name' => 'view_activity_logs']);
 
         // Create roles
         $superadmin = Role::firstOrCreate(['name' => 'superadmin']);
@@ -25,7 +26,9 @@ class RolePermissionSeeder extends Seeder
 
         // Assign permissions to roles
         $superadmin->givePermissionTo('can-manage-system-settings');
+        $superadmin->givePermissionTo('view_activity_logs');
         $admin->givePermissionTo('can-manage-system-settings');
+        $admin->givePermissionTo('view_activity_logs');
 
     }
 }
