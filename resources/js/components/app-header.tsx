@@ -35,6 +35,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-react';
 import AppLogo from './app-logo';
 import AppLogoIcon from './app-logo-icon';
+import AppearanceToggleButton from './appearance-toggle-button';
 
 const mainNavItems: NavItem[] = [
     {
@@ -226,6 +227,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                 ))}
                             </div>
                         </div>
+                        <AppearanceToggleButton />
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
