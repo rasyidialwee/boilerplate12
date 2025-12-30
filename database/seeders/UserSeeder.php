@@ -22,7 +22,7 @@ class UserSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
-        if (!$superadmin->hasRole('superadmin')) {
+        if (! $superadmin->hasRole('superadmin')) {
             $role = Role::firstOrCreate(['name' => 'superadmin']);
             $superadmin->assignRole($role);
         }
@@ -35,12 +35,12 @@ class UserSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
-        if (!$admin->hasRole('admin')) {
+        if (! $admin->hasRole('admin')) {
             $role = Role::firstOrCreate(['name' => 'admin']);
             $admin->assignRole($role);
         }
 
-        User::factory(100)->asUser()->create();
+        User::factory(50)->asUser()->create();
 
     }
 }

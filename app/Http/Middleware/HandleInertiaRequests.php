@@ -40,6 +40,14 @@ class HandleInertiaRequests extends Middleware
 
         $user = $request->user();
 
+        $unreadNotifications = $user
+            ? $user->unreadNotifications()->latest()->limit(5)->get()
+            : collect();
+
+        $unreadCount = $user
+            ? $user->unreadNotifications()->count()
+            : 0;
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -51,6 +59,8 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'unreadNotifications' => $unreadNotifications,
+            'unreadNotificationCount' => $unreadCount,
         ];
     }
 }
