@@ -10,19 +10,65 @@
 /storage/*.key
 /storage/pail
 /vendor
-.DS_Store
+
+# Environment files
 .env
 .env.backup
 .env.production
-.phpactor.json
+.env.testing
+.env.*.php
 .phpunit.result.cache
-Homestead.json
-Homestead.yaml
+
+# IDE & Editor
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.phpstorm.meta.php
+_ide_helper.php
+_ide_helper_models.php
+.phpactor.json
+/.fleet
+/.nova
+/.zed
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Logs & Databases
+*.log
+*.sql
+*.sqlite
+*.sqlite-journal
 npm-debug.log
 yarn-error.log
+
+# Build artifacts
+/public/mix-manifest.json
+/public/js/app.js
+/public/css/app.css
+
+# Deployment
+.deploy/
+.rocketeer/
+
+# Testing
+/coverage
+/phpunit.xml
+
+# Security & Keys
+*.pem
+*.key
+.cert
+
+# Laravel Specific
+Homestead.json
+Homestead.yaml
 /auth.json
-/.fleet
-/.idea
-/.nova
-/.vscode
-/.zed
